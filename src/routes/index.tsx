@@ -18,7 +18,7 @@ export const Route = createFileRoute("/")({
   component: HomeComponent,
 });
 
-const TILE_SIZE = 0.0001;
+const TILE_SIZE = 0.01;
 const speed = 0.003;
 
 function ClickThingy({
@@ -66,36 +66,13 @@ function HomeComponent() {
       const dt = (time - previousTimeRef.current) / 1000;
 
       setState(({ pos, targetPos, line }) => {
-        const tile = pos;
-        const TILE_OFFSET = 3;
-        const newTiles: [number, number][] = [];
-
-        for (let dx = -TILE_OFFSET; dx <= TILE_OFFSET; ++dx) {
-          for (let dy = -TILE_OFFSET; dy <= TILE_OFFSET; ++dy) {
-            const curTile: [number, number] = [tile[0] + dx, tile[1] + dy];
-            const diff = [curTile[0] - pos[0], curTile[1] - pos[1]];
-            const diffLenAngle = Math.sqrt(
-              diff[0] * diff[0] + diff[1] * diff[1],
-            );
-
-            const diffLenTile = diffLenAngle / TILE_SIZE;
-            if (diffLenTile > TILE_OFFSET - 0.5) {
-              continue;
-            }
-
-            const dtile: [number, number] = curTile;
-            if (!line.some((v) => v[0] == dtile[0] && v[1] == dtile[1])) {
-              newTiles.push(dtile);
-            }
-          }
-        }
-
-        const nextTiles = newTiles.length > 0 ? line.concat(newTiles) : line;
+        const nextTiles = line.concat([pos]);
 
         const diff = [targetPos[0] - pos[0], targetPos[1] - pos[1]];
         const diffLen = Math.sqrt(diff[0] * diff[0] + diff[1] * diff[1]);
 
         let nextPos: [number, number];
+
         if (diffLen <= Math.max(dt, 0.0001) * speed) {
           nextPos = targetPos;
         } else {
