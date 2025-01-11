@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   MapContainer,
   Marker,
+  Polyline,
   Popup,
   Rectangle,
   TileLayer,
@@ -51,11 +52,11 @@ function HomeComponent() {
   const [state, setState] = useState<{
     pos: [number, number];
     targetPos: [number, number];
-    tiles: [number, number][];
+    line: [number, number][];
   }>({
     pos: [52.21126, 20.98183],
     targetPos: [52.21126, 20.98183],
-    tiles: [],
+    line: [],
   });
   const requestRef = useRef<number>();
   const previousTimeRef = useRef<number>();
@@ -64,14 +65,14 @@ function HomeComponent() {
     if (previousTimeRef.current !== undefined) {
       const dt = (time - previousTimeRef.current) / 1000;
 
-      setState(({ pos, targetPos, tiles }) => {
-        const tile = tilePos(pos[0], pos[1]);
+      setState(({ pos, targetPos, line }) => {
+        const tile = pos;
         const TILE_OFFSET = 3;
         const newTiles: [number, number][] = [];
 
         for (let dx = -TILE_OFFSET; dx <= TILE_OFFSET; ++dx) {
           for (let dy = -TILE_OFFSET; dy <= TILE_OFFSET; ++dy) {
-            const curTile = tileCenter(tile[0] + dx, tile[1] + dy);
+            const curTile: [number, number] = [tile[0] + dx, tile[1] + dy];
             const diff = [curTile[0] - pos[0], curTile[1] - pos[1]];
             const diffLenAngle = Math.sqrt(
               diff[0] * diff[0] + diff[1] * diff[1],
@@ -82,14 +83,14 @@ function HomeComponent() {
               continue;
             }
 
-            const dtile: [number, number] = [tile[0] + dx, tile[1] + dy];
-            if (!tiles.some((v) => v[0] == dtile[0] && v[1] == dtile[1])) {
+            const dtile: [number, number] = curTile;
+            if (!line.some((v) => v[0] == dtile[0] && v[1] == dtile[1])) {
               newTiles.push(dtile);
             }
           }
         }
 
-        const nextTiles = newTiles.length > 0 ? tiles.concat(newTiles) : tiles;
+        const nextTiles = newTiles.length > 0 ? line.concat(newTiles) : line;
 
         const diff = [targetPos[0] - pos[0], targetPos[1] - pos[1]];
         const diffLen = Math.sqrt(diff[0] * diff[0] + diff[1] * diff[1]);
@@ -102,7 +103,7 @@ function HomeComponent() {
           nextPos = [pos[0] + diff[0] * scale, pos[1] + diff[1] * scale];
         }
 
-        return { pos: nextPos, targetPos, tiles: nextTiles };
+        return { pos: nextPos, targetPos, line: nextTiles };
       });
     }
 
@@ -139,21 +140,7 @@ function HomeComponent() {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <Marker position={state.pos} />
-      {state.tiles.map(([i1, i2]) => {
-        const bounds: [[number, number], [number, number]] = [
-          tileCorner(i1, i2),
-          tileCorner(i1 + 1, i2 + 1),
-        ];
-        return (
-          <Rectangle
-            key={`${i1}:${i2}`}
-            bounds={bounds}
-            stroke={false}
-            fillColor={"green"}
-            fillOpacity={0.5}
-          />
-        );
-      })}
+      <Polyline positions={state.line} />
     </MapContainer>
   );
 }
