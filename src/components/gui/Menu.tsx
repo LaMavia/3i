@@ -43,7 +43,9 @@ export const Menu = () => {
           >
             <VStack className="h-full items-center justify-center">
               <Icon size="md">{icon}</Icon>
-              <Text textStyle="xs">{label}</Text>
+              <Text textTransform="uppercase" textStyle="2xs">
+                {label}
+              </Text>
             </VStack>
           </button>
         ))}

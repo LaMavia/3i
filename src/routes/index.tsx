@@ -12,29 +12,11 @@ import { SelectPathComponent } from "@/components/map/SelectPathComponent";
 import { PositionManager } from "@/components/map/PositionManager";
 import { Mode } from "@/types/Mode";
 import { MENU_HEIGHT } from "@/components/gui/Menu";
+import { MapOverlay } from "@/components/gui/MapOverlay";
 
 export const Route = createFileRoute("/")({
   component: HomeComponent,
 });
-
-const ModeButtons = (): JSX.Element => {
-  const { setState, state } = useContext(StateContext);
-  const mode = state?.mode;
-
-  if (mode == Mode.SelectPath) {
-    const resetPath = () => {
-      setState?.((state) => ({ ...state, path: [] }));
-    };
-    return (
-      <HStack>
-        <Button onClick={resetPath}>Reset Path</Button>
-        <Button>Create Path</Button>
-      </HStack>
-    );
-  }
-
-  return <></>;
-};
 
 const ModeComponent = () => {
   const { state, setState } = useContext(StateContext);
