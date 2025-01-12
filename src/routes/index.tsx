@@ -11,6 +11,7 @@ import { UnexploredModeComponent } from "@/components/map/UnexploredModeComponen
 import { SelectPathComponent } from "@/components/map/SelectPathComponent";
 import { PositionManager } from "@/components/map/PositionManager";
 import { Mode } from "@/types/Mode";
+import { MENU_HEIGHT } from "@/components/gui/Menu";
 
 export const Route = createFileRoute("/")({
   component: HomeComponent,
@@ -76,7 +77,7 @@ function HomeComponent() {
         center={state?.pos ?? [0, 0]}
         zoom={13}
         scrollWheelZoom={true}
-        className="h-[600px]"
+        className={`h-[calc(100vh-${MENU_HEIGHT})]`}
         ref={setMap}
       >
         <TileLayer
@@ -86,34 +87,6 @@ function HomeComponent() {
         {state?.pos && <Marker position={state.pos} />}
         <ModeComponent />
       </MapContainer>
-      <Center>
-        <HStack>
-          <Button
-            onClick={() => {
-              setState?.((s) => ({ ...s, mode: Mode.Standard }));
-            }}
-          >
-            Standard
-          </Button>
-          <Button
-            onClick={() => {
-              setState?.((s) => ({ ...s, mode: Mode.Unexplored }));
-            }}
-          >
-            Unexplored
-          </Button>
-          <Button
-            onClick={() => {
-              setState?.((s) => ({ ...s, mode: Mode.SelectPath }));
-            }}
-          >
-            Select Path
-          </Button>
-        </HStack>
-      </Center>
-      <Center>
-        <ModeButtons />
-      </Center>
     </>
   );
 }

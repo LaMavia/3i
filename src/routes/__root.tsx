@@ -1,6 +1,7 @@
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { Provider } from "@/components/ui/provider";
 import { StateManager } from "@/components/map/StateManager";
+import { Menu } from "@/components/gui/Menu";
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -11,10 +12,9 @@ function RootComponent() {
     <>
       <StateManager>
         <Provider>
-          <div className="h-full w-full">
-            <div className="p-2 flex gap-2 text-lg"></div>
-            <hr />
+          <div className="h-full w-full overflow-hidden flex-col">
             <Outlet />
+            <Menu />
           </div>
         </Provider>
       </StateManager>
