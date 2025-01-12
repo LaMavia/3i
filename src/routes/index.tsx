@@ -13,7 +13,7 @@ import { useGeolocation } from "@uidotdev/usehooks";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapRef } from "react-leaflet/MapContainer";
 import { LeafletMouseEvent } from "leaflet";
-import { Button } from "@/components/ui/button"
+import { Button } from "@chakra-ui/react"
 
 export const Route = createFileRoute("/")({
   component: HomeComponent,
