@@ -1,100 +1,83 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { MapContainer, Marker, TileLayer } from "react-leaflet";
 import {
-  MapContainer,
-  Marker,
-  Polyline,
-  Popup,
-  Rectangle,
-  TileLayer,
-  useMapEvents,
-} from "react-leaflet";
-import { Container } from "@chakra-ui/react";
-import { useGeolocation } from "@uidotdev/usehooks";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+  Dispatch,
+  SetStateAction,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { MapRef } from "react-leaflet/MapContainer";
-import { LeafletMouseEvent } from "leaflet";
+import { Center, HStack } from "@chakra-ui/react";
+import { Button } from "@/components/ui/button";
+import { StateContext } from "@/components/map/StateManager";
+import { ShowPathComponent } from "@/components/map/ShowPathComponent";
+import { ClickCallback } from "@/components/map/ClickCallback";
+import { UnexploredModeComponent } from "@/components/map/UnexploredModeComponent";
+import { SelectPathComponent } from "@/components/map/SelectPathComponent";
+import { PositionManager } from "@/components/map/PositionManager";
+import { Mode } from "@/types/Mode";
 
 export const Route = createFileRoute("/")({
   component: HomeComponent,
 });
 
-const TILE_SIZE = 0.01;
-const speed = 0.003;
+const ModeButtons = ({ mode }: { mode: Mode }): JSX.Element => {
+  const { setState } = useContext(StateContext);
 
-function ClickThingy({
-  setTargetPos,
+  if (mode == Mode.SelectPath) {
+    const resetPath = () => {
+      setState?.((state) => ({ ...state, path: [] }));
+    };
+    return (
+      <HStack>
+        <Button onClick={resetPath}>Reset Path</Button>
+        <Button>Create Path</Button>
+      </HStack>
+    );
+  }
+
+  return <></>;
+};
+
+const ModeComponent = ({
+  mode,
+  setMode,
 }: {
-  setTargetPos: (val: [number, number]) => void;
-}) {
-  useMapEvents({
-    click: (e: LeafletMouseEvent) => {
-      debugger;
-      setTargetPos([e.latlng.lat, e.latlng.lng]);
-    },
-  });
-  return null;
-}
+  mode: Mode;
+  setMode: Dispatch<SetStateAction<Mode>>;
+}) => {
+  const { setState } = useContext(StateContext);
 
-const tilePos = (x: number, y: number): [number, number] => {
-  const conv1D = (x: number) => Math.floor(x / TILE_SIZE);
-  return [conv1D(x), conv1D(y)];
-};
-
-const tileCorner = (x: number, y: number): [number, number] => {
-  return [x * TILE_SIZE, y * TILE_SIZE];
-};
-
-const tileCenter = (x: number, y: number): [number, number] => {
-  return tileCorner(x + 0.5, y + 0.5);
+  if (mode == Mode.Standard) {
+    return (
+      <>
+        <ShowPathComponent />
+        <ClickCallback
+          setMode={setMode}
+          callback={(targetPos) => setState?.((s) => ({ ...s, targetPos }))}
+        />
+      </>
+    );
+  } else if (mode == Mode.Unexplored) {
+    return (
+      <>
+        <UnexploredModeComponent />
+        <ClickCallback
+          setMode={setMode}
+          callback={(targetPos) => setState?.((s) => ({ ...s, targetPos }))}
+        />
+      </>
+    );
+  } else if (mode == Mode.SelectPath) {
+    return <SelectPathComponent />;
+  }
 };
 
 function HomeComponent() {
-  const [state, setState] = useState<{
-    pos: [number, number];
-    targetPos: [number, number];
-    line: [number, number][];
-  }>({
-    pos: [52.21126, 20.98183],
-    targetPos: [52.21126, 20.98183],
-    line: [],
-  });
-  const requestRef = useRef<number>();
-  const previousTimeRef = useRef<number>();
-
-  const update = (time: number) => {
-    if (previousTimeRef.current !== undefined) {
-      const dt = (time - previousTimeRef.current) / 1000;
-
-      setState(({ pos, targetPos, line }) => {
-        const nextTiles = line.concat([pos]);
-
-        const diff = [targetPos[0] - pos[0], targetPos[1] - pos[1]];
-        const diffLen = Math.sqrt(diff[0] * diff[0] + diff[1] * diff[1]);
-
-        let nextPos: [number, number];
-
-        if (diffLen <= Math.max(dt, 0.0001) * speed) {
-          nextPos = targetPos;
-        } else {
-          const scale = (dt * speed) / diffLen;
-          nextPos = [pos[0] + diff[0] * scale, pos[1] + diff[1] * scale];
-        }
-
-        return { pos: nextPos, targetPos, line: nextTiles };
-      });
-    }
-
-    previousTimeRef.current = time;
-    requestRef.current = requestAnimationFrame(update);
-  };
-
-  useEffect(() => {
-    requestRef.current = requestAnimationFrame(update);
-    return () => {
-      requestRef.current && cancelAnimationFrame(requestRef.current);
-    };
-  }, []); // Make sure the effect runs only once
-
+  const { state } = useContext(StateContext);
+  const [mode, setMode] = useState<Mode>(Mode.Standard);
   const [map, setMap] = useState<MapRef>(null);
 
   useEffect(() => {
@@ -102,22 +85,50 @@ function HomeComponent() {
   }, [map]);
 
   return (
-    <MapContainer
-      center={state.pos}
-      zoom={13}
-      scrollWheelZoom={true}
-      className="h-[600px]"
-      ref={setMap}
-    >
-      <ClickThingy
-        setTargetPos={(targetPos) => setState((s) => ({ ...s, targetPos }))}
-      />
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <Marker position={state.pos} />
-      <Polyline positions={state.line} />
-    </MapContainer>
+    <>
+      <PositionManager />
+      <MapContainer
+        center={state?.pos ?? [0, 0]}
+        zoom={13}
+        scrollWheelZoom={true}
+        className="h-[600px]"
+        ref={setMap}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {state?.pos && <Marker position={state.pos} />}
+        <ModeComponent mode={mode} setMode={setMode} />
+      </MapContainer>
+      <Center>
+        <HStack>
+          <Button
+            onClick={() => {
+              setMode(Mode.Standard);
+            }}
+          >
+            Standard
+          </Button>
+          <Button
+            onClick={() => {
+              setMode(Mode.Unexplored);
+            }}
+          >
+            Unexplored
+          </Button>
+          <Button
+            onClick={() => {
+              setMode(Mode.SelectPath);
+            }}
+          >
+            Select Path
+          </Button>
+        </HStack>
+      </Center>
+      <Center>
+        <ModeButtons mode={mode} />
+      </Center>
+    </>
   );
 }
