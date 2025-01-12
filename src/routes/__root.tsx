@@ -15,8 +15,8 @@ function RootComponent() {
         <Provider>
           <div className="h-full w-full overflow-hidden flex-col absolute inset-0">
             <Outlet />
-            <Menu />
           </div>
+          <Menu />
           <ModeButtons />
         </Provider>
       </StateManager>

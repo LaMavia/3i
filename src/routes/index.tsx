@@ -59,7 +59,7 @@ function HomeComponent() {
         center={state?.pos ?? [0, 0]}
         zoom={13}
         scrollWheelZoom={true}
-        className={`h-[calc(100vh-${MENU_HEIGHT})]`}
+        className={`h-[calc(100vh-${MENU_HEIGHT})] lg:h-[100vh]`}
         ref={setMap}
       >
         <TileLayer

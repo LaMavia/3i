@@ -3,7 +3,7 @@ import { StateContext } from "./StateManager";
 import { Mode } from "@/types/Mode";
 import { MapOverlay } from "../gui/MapOverlay";
 import { cn } from "@/utils/cn";
-import { MENU_HEIGHT } from "../gui/Menu";
+import { LG_MENU_HEIGHT, MENU_HEIGHT } from "../gui/Menu";
 
 export const ModeButtons = (): JSX.Element => {
   const { setState, state } = useContext(StateContext);
@@ -17,7 +17,7 @@ export const ModeButtons = (): JSX.Element => {
       <MapOverlay
         className={cn(
           "inset-[unset] inset-x-0 w-full flex",
-          `bottom-[${MENU_HEIGHT}]`,
+          `bottom-[${MENU_HEIGHT}] lg:bottom-[${LG_MENU_HEIGHT}]`,
         )}
       >
         <div className="flex flex-col bg-gray-800 w-full [*>&]:w-full h-fit">

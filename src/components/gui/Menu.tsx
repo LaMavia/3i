@@ -6,6 +6,8 @@ import { PiGpsBold, PiPathBold, PiMapTrifoldBold } from "react-icons/pi";
 import { cn } from "@/utils/cn";
 
 export const MENU_HEIGHT = "72px";
+export const LG_MENU_HEIGHT = "54px";
+export const LG_MENU_WIDTH = "600px";
 
 const MENU_ITEMS = [
   {
@@ -29,7 +31,9 @@ export const Menu = () => {
   const { state, setState } = useContext(StateContext);
 
   return (
-    <div className={`h-[${MENU_HEIGHT}]`}>
+    <div
+      className={`absolute inset-x-0 mx-auto bottom-0 w-full z-[10000] lg:h-[${LG_MENU_HEIGHT}] h-[${MENU_HEIGHT}] bg-gray-900 lg:w-[${LG_MENU_WIDTH}]`}
+    >
       <div className="flex flex-row justify-center items-center w-full h-full">
         {MENU_ITEMS.map(({ icon, label, mode }) => (
           <button
