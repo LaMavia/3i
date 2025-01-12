@@ -4,23 +4,22 @@ import {
   Marker,
   Polygon,
   Polyline,
-  Rectangle,
   TileLayer,
   useMapEvents,
 } from "react-leaflet";
-import { Container } from "@chakra-ui/react";
-import { useGeolocation } from "@uidotdev/usehooks";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MapRef } from "react-leaflet/MapContainer";
 import { LeafletMouseEvent } from "leaflet";
-import { Button } from "@chakra-ui/react"
+import { Center, HStack } from "@chakra-ui/react"
+import { Provider } from "@/components/ui/provider";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
   component: HomeComponent,
 });
 
 const TILE_SIZE = 0.0004;
-const SPEED = 0.003;
+const SPEED = 0.009;
 const MIN_DIST_FOR_POINT = 0.0001
 const MAX_DIST = 0.05
 
@@ -33,9 +32,9 @@ const pointSub = (p1: Point, p2: Point): Point => [p1[0] - p2[0], p1[1] - p2[1]]
 const pointDistFromOrigin = (p: Point): number => Math.sqrt(ratio * ratio * p[0] * p[0] + p[1] * p[1]);
 
 function ClickCallback({
-  setTargetPos,
+  callback: setTargetPos,
 }: {
-  setTargetPos: (val: Point) => void;
+  callback: (val: Point) => void;
 }) {
   useMapEvents({
     click: (e: LeafletMouseEvent) => {
@@ -62,6 +61,7 @@ type State = {
   pos: [number, number];
   targetPos: [number, number];
   line: [number, number][];
+  path: [number, number][];
 }
 
 const forTileInRange = (pos: Point, range: number, callback: (tile: Point, closeness: number) => void) => {
@@ -92,8 +92,8 @@ function ShowPathComponent({state, setState}: {state: State, setState: SetState}
     if (previousTimeRef.current !== undefined) {
       const dt = (time - previousTimeRef.current) / 1000;
       setState(({ pos, targetPos, line }) => {
-        const diff = [targetPos[0] - pos[0], targetPos[1] - pos[1]];
-        const diffLen = Math.sqrt(diff[0] * diff[0] + diff[1] * diff[1]);
+        const diff = pointSub(targetPos, pos);
+        const diffLen = pointDistFromOrigin(diff);
 
         let nextPos: [number, number];
 
@@ -110,8 +110,7 @@ function ShowPathComponent({state, setState}: {state: State, setState: SetState}
         let nextLines = line;
         if (line.length > 0) {
           const last_point = line[line.length - 1]
-          const nextPointDiffV = [last_point[0] - pos[0], last_point[1] - pos[1]]
-          const nextPointDiff = Math.sqrt(nextPointDiffV[0] * nextPointDiffV[0] + nextPointDiffV[1] * nextPointDiffV[1])
+          const nextPointDiff = pointDistFromOrigin(pointSub(last_point, pos))
           if (nextPointDiff > MIN_DIST_FOR_POINT) {
             nextLines = line.concat([pos])
           }
@@ -120,7 +119,7 @@ function ShowPathComponent({state, setState}: {state: State, setState: SetState}
           nextLines = [pos]
         }
 
-        return { pos: nextPos, targetPos: targetPos, line: nextLines };
+        return {...state, pos: nextPos, line: nextLines };
       });
     }
 
@@ -134,7 +133,19 @@ function ShowPathComponent({state, setState}: {state: State, setState: SetState}
       requestRef.current && cancelAnimationFrame(requestRef.current);
     };
   }, []); // Make sure the effect runs only once
-  return (<Polyline positions={state.line.concat([state.pos])} />)
+  return (<>
+    <Polyline positions={state.line.concat([state.pos])} />
+  </>)
+}
+
+function SelectPathComponent({state, setState}: {state: State, setState: SetState}) {
+  return <>
+    <ShowPathComponent state={state} setState={setState}/>
+    <ClickCallback callback={(p) => setState({...state, path: state.path.concat([p])})}/>
+    <>{
+      state.path.map((p, i) => <Marker key={i} position={p} opacity={0.5} title={(i+1).toString()}/>)
+    }</>
+  </>
 }
 
 function UnexploredModeComponent({state}: {state: State}) {
@@ -183,11 +194,31 @@ function UnexploredModeComponent({state}: {state: State}) {
   )}</>)*/
 }
 
+enum Mode {
+  Standard,
+  Unexplored,
+  SelectPath,
+};
+
+const ModeButtons = ({state, setState, mode}: {state: State, setState: SetState, mode: Mode}): JSX.Element => {
+  if (mode == Mode.SelectPath) {
+    const resetPath = () => {
+      setState({...state, path: []})
+    }
+    return <HStack>
+      <Button onClick={resetPath}>Reset Path</Button>
+      <Button>Create Path</Button>
+    </HStack>
+  }
+  return <></>
+}
+
 function HomeComponent() {
   const [state, setState] = useState<State>({
     pos: [52.21126, 20.98183],
     targetPos: [52.21126, 20.98183],
     line: [],
+    path: [],
   });
 
   const [map, setMap] = useState<MapRef>(null);
@@ -196,24 +227,26 @@ function HomeComponent() {
     window.dispatchEvent(new Event("resize"));
   }, [map]);
 
-  enum Mode {
-    Standard,
-    Unexplored,
-  };
-
   const [mode, setMode] = useState<Mode>(Mode.Standard)
 
   const ModeComponent = () => {
     if (mode == Mode.Standard) {
-      return <ShowPathComponent state={state} setState={setState}/>
+      return <><ShowPathComponent state={state} setState={setState}/>
+          <ClickCallback
+            callback={(targetPos) => setState((s) => ({ ...s, targetPos }))}
+          />
+      </>
     }
     else if (mode == Mode.Unexplored) {
       return <UnexploredModeComponent state={state}/>
     }
+    else if (mode == Mode.SelectPath) {
+      return <SelectPathComponent state={state} setState={setState}/>
+    }
   }
 
   return (
-    <>
+    <Provider>
       <MapContainer
         center={state.pos}
         zoom={13}
@@ -221,9 +254,6 @@ function HomeComponent() {
         className="h-[600px]"
         ref={setMap}
       >
-        <ClickCallback
-          setTargetPos={(targetPos) => setState((s) => ({ ...s, targetPos }))}
-        />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -231,8 +261,16 @@ function HomeComponent() {
         <Marker position={state.pos} />
         <ModeComponent/>
       </MapContainer>
-      <Button onClick={() => {setMode(Mode.Standard)}} variant="solid">Standard</Button>
-      <Button onClick={() => {setMode(Mode.Unexplored)}} variant="solid">Unexplored</Button>
-    </>
+      <Center>
+        <HStack>
+          <Button onClick={() => {setMode(Mode.Standard)}}>Standard</Button>
+          <Button onClick={() => {setMode(Mode.Unexplored)}}>Unexplored</Button>
+          <Button onClick={() => {setMode(Mode.SelectPath)}}>Select Path</Button>
+        </HStack>
+      </Center>
+      <Center>
+        <ModeButtons mode={mode} state={state} setState={setState}/>
+      </Center>
+    </Provider>
   );
 }
