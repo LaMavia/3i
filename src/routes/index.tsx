@@ -2,31 +2,35 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
   MapContainer,
   Marker,
+  Polygon,
   Polyline,
-  Popup,
   Rectangle,
   TileLayer,
   useMapEvents,
 } from "react-leaflet";
-import { Button, Container } from "@chakra-ui/react";
+import { Container } from "@chakra-ui/react";
 import { useGeolocation } from "@uidotdev/usehooks";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapRef } from "react-leaflet/MapContainer";
 import { LeafletMouseEvent } from "leaflet";
+import { Button } from "@/components/ui/button"
 
 export const Route = createFileRoute("/")({
   component: HomeComponent,
 });
 
-const TILE_SIZE = 0.001;
+const TILE_SIZE = 0.0004;
 const SPEED = 0.003;
 const MIN_DIST_FOR_POINT = 0.0001
+const MAX_DIST = 0.05
+
+const ratio = 120 / 75
 
 type Point = [number, number]
 
 const pointAdd = (p1: Point, p2: Point): Point => [p1[0] + p2[0], p1[1] + p2[1]];
 const pointSub = (p1: Point, p2: Point): Point => [p1[0] - p2[0], p1[1] - p2[1]];
-const pointDistFromOrigin = (p: Point): number => Math.sqrt(p[0] * p[0] + p[1] * p[1]);
+const pointDistFromOrigin = (p: Point): number => Math.sqrt(ratio * ratio * p[0] * p[0] + p[1] * p[1]);
 
 function ClickCallback({
   setTargetPos,
@@ -43,12 +47,11 @@ function ClickCallback({
 }
 
 const tilePos = (p: Point): Point => {
-  const conv1D = (x: number) => Math.floor(x / TILE_SIZE);
-  return [conv1D(p[0]), conv1D(p[1])];
+  return [Math.floor(p[0] / (TILE_SIZE / ratio)), Math.floor(p[1] / TILE_SIZE)];
 };
 
 const tileCorner = (x: Point): Point => {
-  return [x[0] * TILE_SIZE, x[1] * TILE_SIZE];
+  return [x[0] * TILE_SIZE / ratio, x[1] * TILE_SIZE];
 };
 
 const tileCenter = (p: Point): Point => {
@@ -135,15 +138,13 @@ function ShowPathComponent({state, setState}: {state: State, setState: SetState}
 }
 
 function UnexploredModeComponent({state}: {state: State}) {
-  const MAX_DIST = 0.02
-
   const pointToId = (p: Point) => p[0] + "_" + p[1];
 
   let explored = new Map<String, number>([]);
   let rects: [Point, Point, number][] = []
 
   state.line.forEach((p) => {
-    forTileInRange(p, TILE_SIZE * 3, (t, closeness) => {
+    forTileInRange(p, 0.0014, (t, closeness) => {
       let t_id = pointToId(t)
       closeness = Math.min(closeness * 2, 1)
       let prevDist = explored.get(t_id);
@@ -161,14 +162,25 @@ function UnexploredModeComponent({state}: {state: State}) {
     if (dist === undefined) {
       dist = 0
     }
+    if (dist > 0.8) {
+      return
+    }
     rects.push(
       [tileCorner(tile), tileCorner(pointAdd(tile, [1, 1])), Math.min(closeness, (1 - dist))]
     )
   })
 
-  return (<>{rects.map(([p1, p2, closeness]) => 
+  // rects = rects.filter(([_1, _2, closeness]) => closeness < 0.5)
+
+  let polygon = rects.map(([p1, p2, _]): Point[][] => {
+    return [[p1, [p1[0], p2[1]], p2, [p2[0], p1[1]]]]
+  })
+
+  return (<Polygon positions={polygon} fillOpacity={0.6} stroke={false}/>)
+
+  /*return (<>{rects.map(([p1, p2, closeness]) => 
     <Rectangle bounds={[p1, p2]} stroke={false} fillOpacity={0.8*Math.pow(closeness, 0.6)}/>
-  )}</>)
+  )}</>)*/
 }
 
 function HomeComponent() {
