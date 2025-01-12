@@ -1,35 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { MapContainer, Marker, TileLayer } from "react-leaflet";
 import {
-  MapContainer,
-  Marker,
-  Polygon,
-  Polyline,
-  TileLayer,
-  useMapEvents,
-} from "react-leaflet";
-import { useContext, useEffect, useRef, useState } from "react";
+  Dispatch,
+  SetStateAction,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { MapRef } from "react-leaflet/MapContainer";
-import { LeafletMouseEvent } from "leaflet";
 import { Center, HStack } from "@chakra-ui/react";
-import { Provider } from "@/components/ui/provider";
 import { Button } from "@/components/ui/button";
-import { Point } from "@/utils/point";
 import { StateContext } from "@/components/map/StateManager";
 import { ShowPathComponent } from "@/components/map/ShowPathComponent";
 import { ClickCallback } from "@/components/map/ClickCallback";
 import { UnexploredModeComponent } from "@/components/map/UnexploredModeComponent";
 import { SelectPathComponent } from "@/components/map/SelectPathComponent";
 import { PositionManager } from "@/components/map/PositionManager";
+import { Mode } from "@/types/Mode";
 
 export const Route = createFileRoute("/")({
   component: HomeComponent,
 });
-
-enum Mode {
-  Standard,
-  Unexplored,
-  SelectPath,
-}
 
 const ModeButtons = ({ mode }: { mode: Mode }): JSX.Element => {
   const { setState } = useContext(StateContext);
@@ -49,7 +41,13 @@ const ModeButtons = ({ mode }: { mode: Mode }): JSX.Element => {
   return <></>;
 };
 
-const ModeComponent = ({ mode }: { mode: Mode }) => {
+const ModeComponent = ({
+  mode,
+  setMode,
+}: {
+  mode: Mode;
+  setMode: Dispatch<SetStateAction<Mode>>;
+}) => {
   const { setState } = useContext(StateContext);
 
   if (mode == Mode.Standard) {
@@ -57,6 +55,7 @@ const ModeComponent = ({ mode }: { mode: Mode }) => {
       <>
         <ShowPathComponent />
         <ClickCallback
+          setMode={setMode}
           callback={(targetPos) => setState?.((s) => ({ ...s, targetPos }))}
         />
       </>
@@ -66,6 +65,7 @@ const ModeComponent = ({ mode }: { mode: Mode }) => {
       <>
         <UnexploredModeComponent />
         <ClickCallback
+          setMode={setMode}
           callback={(targetPos) => setState?.((s) => ({ ...s, targetPos }))}
         />
       </>
@@ -99,7 +99,7 @@ function HomeComponent() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {state?.pos && <Marker position={state.pos} />}
-        <ModeComponent mode={mode} />
+        <ModeComponent mode={mode} setMode={setMode} />
       </MapContainer>
       <Center>
         <HStack>

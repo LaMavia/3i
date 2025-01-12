@@ -11,6 +11,7 @@ export function SelectPathComponent() {
     <>
       <ShowPathComponent />
       <ClickCallback
+        setMode={() => {}}
         callback={(p) =>
           setState?.((state) => ({ ...state, path: [...state.path, p] }))
         }
