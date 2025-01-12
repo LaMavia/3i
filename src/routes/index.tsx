@@ -1,13 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MapContainer, Marker, TileLayer } from "react-leaflet";
-import {
-  Dispatch,
-  SetStateAction,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useContext, useEffect, useState } from "react";
 import { MapRef } from "react-leaflet/MapContainer";
 import { Center, HStack } from "@chakra-ui/react";
 import { Button } from "@/components/ui/button";
@@ -23,8 +16,9 @@ export const Route = createFileRoute("/")({
   component: HomeComponent,
 });
 
-const ModeButtons = ({ mode }: { mode: Mode }): JSX.Element => {
-  const { setState } = useContext(StateContext);
+const ModeButtons = (): JSX.Element => {
+  const { setState, state } = useContext(StateContext);
+  const mode = state?.mode;
 
   if (mode == Mode.SelectPath) {
     const resetPath = () => {
@@ -41,43 +35,34 @@ const ModeButtons = ({ mode }: { mode: Mode }): JSX.Element => {
   return <></>;
 };
 
-const ModeComponent = ({
-  mode,
-  setMode,
-}: {
-  mode: Mode;
-  setMode: Dispatch<SetStateAction<Mode>>;
-}) => {
-  const { setState } = useContext(StateContext);
+const ModeComponent = () => {
+  const { state, setState } = useContext(StateContext);
 
-  if (mode == Mode.Standard) {
+  if (state?.mode == Mode.Standard) {
     return (
       <>
         <ShowPathComponent />
         <ClickCallback
-          setMode={setMode}
           callback={(targetPos) => setState?.((s) => ({ ...s, targetPos }))}
         />
       </>
     );
-  } else if (mode == Mode.Unexplored) {
+  } else if (state?.mode == Mode.Unexplored) {
     return (
       <>
         <UnexploredModeComponent />
         <ClickCallback
-          setMode={setMode}
           callback={(targetPos) => setState?.((s) => ({ ...s, targetPos }))}
         />
       </>
     );
-  } else if (mode == Mode.SelectPath) {
+  } else if (state?.mode == Mode.SelectPath) {
     return <SelectPathComponent />;
   }
 };
 
 function HomeComponent() {
-  const { state } = useContext(StateContext);
-  const [mode, setMode] = useState<Mode>(Mode.Standard);
+  const { state, setState } = useContext(StateContext);
   const [map, setMap] = useState<MapRef>(null);
 
   useEffect(() => {
@@ -99,27 +84,27 @@ function HomeComponent() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {state?.pos && <Marker position={state.pos} />}
-        <ModeComponent mode={mode} setMode={setMode} />
+        <ModeComponent />
       </MapContainer>
       <Center>
         <HStack>
           <Button
             onClick={() => {
-              setMode(Mode.Standard);
+              setState?.((s) => ({ ...s, mode: Mode.Standard }));
             }}
           >
             Standard
           </Button>
           <Button
             onClick={() => {
-              setMode(Mode.Unexplored);
+              setState?.((s) => ({ ...s, mode: Mode.Unexplored }));
             }}
           >
             Unexplored
           </Button>
           <Button
             onClick={() => {
-              setMode(Mode.SelectPath);
+              setState?.((s) => ({ ...s, mode: Mode.SelectPath }));
             }}
           >
             Select Path
@@ -127,7 +112,7 @@ function HomeComponent() {
         </HStack>
       </Center>
       <Center>
-        <ModeButtons mode={mode} />
+        <ModeButtons />
       </Center>
     </>
   );

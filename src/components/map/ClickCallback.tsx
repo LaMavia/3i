@@ -1,19 +1,19 @@
 import { Mode } from "@/types/Mode";
 import { Point } from "@/utils/point";
 import { LeafletMouseEvent } from "leaflet";
-import { Dispatch, SetStateAction } from "react";
+import { useContext } from "react";
 import { useMapEvents } from "react-leaflet";
+import { StateContext } from "./StateManager";
 
 export function ClickCallback({
   callback: setTargetPos,
-  setMode,
 }: {
   callback: (val: Point) => void;
-  setMode: Dispatch<SetStateAction<Mode>>;
 }) {
+  const { setState } = useContext(StateContext);
   useMapEvents({
     click: (e: LeafletMouseEvent) => {
-      setMode(Mode.Standard);
+      setState?.((s) => ({ ...s, mode: Mode.Standard }));
       setTargetPos([e.latlng.lat, e.latlng.lng]);
     },
   });

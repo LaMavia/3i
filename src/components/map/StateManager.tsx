@@ -1,3 +1,4 @@
+import { Mode } from "@/types/Mode";
 import { PropsWithChildren, createContext, useState } from "react";
 
 export type State = {
@@ -5,6 +6,7 @@ export type State = {
   targetPos: [number, number];
   line: [number, number][];
   path: [number, number][];
+  mode: Mode;
 };
 
 export type SetState = React.Dispatch<React.SetStateAction<State>>;
@@ -20,6 +22,7 @@ export const StateManager: React.FC<PropsWithChildren> = ({ children }) => {
     targetPos: [52.21126, 20.98183],
     line: [],
     path: [],
+    mode: Mode.Standard,
   });
 
   return (
