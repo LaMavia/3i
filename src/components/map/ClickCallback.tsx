@@ -9,7 +9,6 @@ export function ClickCallback({
 }) {
   useMapEvents({
     click: (e: LeafletMouseEvent) => {
-      debugger;
       setTargetPos([e.latlng.lat, e.latlng.lng]);
     },
   });
